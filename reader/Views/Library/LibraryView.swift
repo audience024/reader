@@ -1,32 +1,6 @@
 import SwiftUI
 import SwiftData
 
-struct MainTabView: View {
-    var body: some View {
-        TabView {
-            LibraryView()
-                .tabItem {
-                    Label("书架", systemImage: "books.vertical")
-                }
-            
-            DiscoveryView()
-                .tabItem {
-                    Label("发现", systemImage: "safari")
-                }
-            
-            SubscriptionView()
-                .tabItem {
-                    Label("订阅", systemImage: "newspaper")
-                }
-            
-            ProfileView()
-                .tabItem {
-                    Label("我的", systemImage: "person")
-                }
-        }
-    }
-}
-
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var books: [Book]
