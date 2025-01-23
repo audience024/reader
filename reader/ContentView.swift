@@ -37,7 +37,12 @@ struct ContentView: View {
         } detail: {
             Text("Select an item")
         }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 
     private func addItem() {
         withAnimation {
