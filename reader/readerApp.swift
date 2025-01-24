@@ -14,6 +14,7 @@ struct readerApp: App {
         let schema = Schema([
             Item.self,
             Book.self,
+            Chapter.self,
             BookSource.self,
             AppTheme.self,
         ])

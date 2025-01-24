@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
@@ -8,6 +9,9 @@ struct LibraryView: View {
     @State private var showingGroupSheet = false
     @State private var showingMoreSheet = false
     @State private var showingSearchSheet = false
+    @State private var showingFilePicker = false
+    @State private var importError: Error?
+    @State private var showingErrorAlert = false
     
     var body: some View {
         NavigationStack {
@@ -32,18 +36,20 @@ struct LibraryView: View {
                 
                 List {
                     ForEach(books) { book in
-                        BookRowView(book: book)
-                            .contextMenu {
-                                Button(action: {}) {
-                                    Label("查看详情", systemImage: "info.circle")
+                        NavigationLink(destination: ReaderView(book: book)) {
+                            BookRowView(book: book)
+                                .contextMenu {
+                                    Button(action: {}) {
+                                        Label("查看详情", systemImage: "info.circle")
+                                    }
+                                    Button(action: {}) {
+                                        Label("下载", systemImage: "arrow.down.circle")
+                                    }
+                                    Button(action: {}) {
+                                        Label("移动到分组", systemImage: "folder")
+                                    }
                                 }
-                                Button(action: {}) {
-                                    Label("下载", systemImage: "arrow.down.circle")
-                                }
-                                Button(action: {}) {
-                                    Label("移动到分组", systemImage: "folder")
-                                }
-                            }
+                        }
                     }
                 }
             }
@@ -54,6 +60,7 @@ struct LibraryView: View {
                         Image(systemName: "magnifyingglass")
                     }
                 }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingMoreSheet = true }) {
                         Image(systemName: "ellipsis.circle")
@@ -63,7 +70,7 @@ struct LibraryView: View {
             .sheet(isPresented: $showingMoreSheet) {
                 NavigationStack {
                     List {
-                        Button(action: {}) {
+                        Button(action: { showingFilePicker = true }) {
                             Label("添加本地书籍", systemImage: "doc.badge.plus")
                         }
                         Button(action: {}) {
@@ -91,7 +98,7 @@ struct LibraryView: View {
                         ForEach(books.filter { book in
                             searchText.isEmpty ||
                             book.title.localizedCaseInsensitiveContains(searchText) ||
-                            book.author.localizedCaseInsensitiveContains(searchText)
+                            (book.author?.localizedCaseInsensitiveContains(searchText) ?? false)
                         }) { book in
                             BookRowView(book: book)
                         }
@@ -107,6 +114,43 @@ struct LibraryView: View {
                         }
                     }
                 }
+            }
+            .sheet(isPresented: $showingFilePicker) {
+                DocumentPicker(types: [.text]) { result in
+                    switch result {
+                    case .success(let url):
+                        Task {
+                            do {
+                                let fileService = FileService.shared
+                                let bookUrl = try await fileService.importBook(from: url)
+                                let encoding = try fileService.detectEncoding(of: bookUrl)
+                                
+                                let book = Book(
+                                    title: url.deletingPathExtension().lastPathComponent,
+                                    filePath: bookUrl.path,
+                                    fileType: .txt,
+                                    encoding: encoding,
+                                    isLocal: true
+                                )
+                                
+                                modelContext.insert(book)
+                                try modelContext.save()
+                                
+                            } catch {
+                                importError = error
+                                showingErrorAlert = true
+                            }
+                        }
+                    case .failure(let error):
+                        importError = error
+                        showingErrorAlert = true
+                    }
+                }
+            }
+            .alert("导入失败", isPresented: $showingErrorAlert, presenting: importError) { _ in
+                Button("确定", role: .cancel) {}
+            } message: { error in
+                Text(error.localizedDescription)
             }
         }
         .enableInjection()
@@ -128,7 +172,7 @@ struct BookRowView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } placeholder: {
-                Rectangle()
+                RoundedRectangle(cornerRadius: 6)
                     .fill(Color.gray.opacity(0.2))
             }
             .frame(width: 60, height: 80)
@@ -140,22 +184,24 @@ struct BookRowView: View {
                     .font(.headline)
                     .lineLimit(1)
                 
-                Text(book.author)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                if let author = book.author {
+                    Text(author)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
                 
-                if let lastChapter = book.lastChapter {
-                    Text("上次读到：\(lastChapter)")
+                if book.isReading {
+                    Text("阅读至：第\(book.lastReadChapter + 1)章")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
                 
-                if let latestChapter = book.latestChapter {
-                    Text("最新章节：\(latestChapter)")
+                if let lastReadTime = book.lastReadTime {
+                    Text("最近阅读：\(lastReadTime.formatted(.relative(presentation: .named)))")
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
             }
@@ -185,12 +231,6 @@ struct GroupButton: View {
 }
 
 #Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Book.self, configurations: config)
-    
-    let sampleBook = Book(title: "示例书籍", author: "作者", sourceUrl: "https://example.com")
-    container.mainContext.insert(sampleBook)
-    
-    return LibraryView()
-        .modelContainer(container)
+    LibraryView()
+        .modelContainer(for: Book.self)
 }
