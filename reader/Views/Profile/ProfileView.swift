@@ -82,7 +82,16 @@ struct ProfileView: View {
                     Text("信息查看")
                 }
             }
-            .navigationTitle("")
+            .navigationTitle("我的")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // TODO: 显示帮助信息
+                    }) {
+                        Image(systemName: "questionmark.circle")
+                    }
+                }
+            }
         }
         .enableInjection()
     }
