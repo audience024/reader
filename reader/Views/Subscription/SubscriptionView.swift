@@ -1,46 +1,72 @@
 import SwiftUI
 
 struct SubscriptionView: View {
+    @State private var searchText = ""
+    
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    NavigationLink {
-                        Text("我的订阅")
-                    } label: {
-                        Label("我的订阅", systemImage: "star.fill")
-                            .badge(3)
-                    }
-                    
-                    NavigationLink {
-                        Text("订阅源管理")
-                    } label: {
-                        Label("订阅源管理", systemImage: "gear")
-                    }
-                } header: {
-                    Text("订阅管理")
-                }
+            VStack(spacing: 0) {
+                // 搜索栏
+                SearchBar(text: $searchText)
+                    .padding()
                 
-                Section {
-                    NavigationLink {
-                        Text("杂志")
-                    } label: {
-                        Label("杂志", systemImage: "magazine")
+                List {
+                    // 订阅源管理
+                    Section {
+                        NavigationLink {
+                            Text("收藏夹")
+                        } label: {
+                            Label("收藏夹", systemImage: "star.fill")
+                        }
+                        
+                        NavigationLink {
+                            Text("分组管理")
+                        } label: {
+                            Label("分组管理", systemImage: "folder")
+                        }
+                    } header: {
+                        Text("订阅源管理")
                     }
                     
-                    NavigationLink {
-                        Text("视频直播")
-                    } label: {
-                        Label("视频直播", systemImage: "play.tv")
+                    // 订阅源设置
+                    Section {
+                        NavigationLink {
+                            Text("新建订阅源")
+                        } label: {
+                            Label("新建订阅源", systemImage: "plus.circle")
+                        }
+                        
+                        NavigationLink {
+                            Text("订阅源设置")
+                        } label: {
+                            Label("订阅源设置", systemImage: "gearshape")
+                        }
+                    } header: {
+                        Text("订阅源设置")
                     }
                     
-                    NavigationLink {
-                        Text("网页游戏")
-                    } label: {
-                        Label("网页游戏", systemImage: "gamecontroller")
+                    // 网络内容
+                    Section {
+                        NavigationLink {
+                            Text("RSS订阅")
+                        } label: {
+                            Label("RSS订阅", systemImage: "dot.radiowaves.left.and.right")
+                        }
+                        
+                        NavigationLink {
+                            Text("网页内容")
+                        } label: {
+                            Label("网页内容", systemImage: "safari")
+                        }
+                        
+                        NavigationLink {
+                            Text("其他来源")
+                        } label: {
+                            Label("其他来源", systemImage: "network")
+                        }
+                    } header: {
+                        Text("订阅源")
                     }
-                } header: {
-                    Text("内容分类")
                 }
             }
             .navigationTitle("订阅")
