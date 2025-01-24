@@ -6,9 +6,28 @@ struct SubscriptionView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 搜索栏
-                SearchBar(text: $searchText)
-                    .padding()
+                // 顶部工具栏
+                HStack(spacing: 12) {
+                    // 搜索栏
+                    SearchBar(text: $searchText)
+                    
+                    // 功能按钮
+                    Button(action: {}) {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                    }
+                    
+                    Button(action: {}) {
+                        Image(systemName: "folder")
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Button(action: {}) {
+                        Image(systemName: "gearshape")
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding()
                 
                 List {
                     // 订阅源管理
