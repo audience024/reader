@@ -79,7 +79,7 @@ struct DiscoveryView: View {
                     }
                 }
             }
-            .navigationTitle("发现")
+            .navigationTitle("")
         }
         .enableInjection()
     }

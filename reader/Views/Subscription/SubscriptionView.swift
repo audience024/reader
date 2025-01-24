@@ -69,7 +69,7 @@ struct SubscriptionView: View {
                     }
                 }
             }
-            .navigationTitle("订阅")
+            .navigationTitle("")
         }
         .enableInjection()
     }

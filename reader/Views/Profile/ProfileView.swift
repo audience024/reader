@@ -82,7 +82,7 @@ struct ProfileView: View {
                     Text("信息查看")
                 }
             }
-            .navigationTitle("我的")
+            .navigationTitle("")
         }
         .enableInjection()
     }

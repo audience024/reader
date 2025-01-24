@@ -4,16 +4,31 @@ import SwiftData
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var books: [Book]
-    @State private var searchText = ""
+    @State private var searchText = "" // 移除搜索栏
     @State private var showingGroupSheet = false
     @State private var showingMoreSheet = false
+    @State private var showingSearchSheet = false
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 搜索栏
-                SearchBar(text: $searchText)
-                    .padding()
+                // 分组
+                VStack(spacing: 0) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            GroupButton(title: "全部", count: books.count)
+                            GroupButton(title: "未分组", count: books.filter { $0.groupName == nil }.count)
+                            GroupButton(title: "收藏", count: books.filter { $0.isFavorite }.count)
+                            GroupButton(title: "在看", count: books.filter { $0.isReading }.count)
+                            GroupButton(title: "未看", count: books.filter { !$0.isReading }.count)
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.vertical, 8)
+                    
+                    
+                }
+                .background(Color(.systemBackground))
                 
                 List {
                     ForEach(books) { book in
@@ -32,11 +47,11 @@ struct LibraryView: View {
                     }
                 }
             }
-            .navigationTitle("书架")
+            .navigationTitle("")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingGroupSheet = true }) {
-                        Image(systemName: "folder")
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showingSearchSheet = true }) {
+                        Image(systemName: "magnifyingglass")
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -44,30 +59,6 @@ struct LibraryView: View {
                         Image(systemName: "ellipsis.circle")
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {}) {
-                        Image(systemName: "magnifyingglass")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingGroupSheet) {
-                NavigationStack {
-                    List {
-                        Text("全部")
-                        Text("未分组")
-                        Text("收藏")
-                    }
-                    .navigationTitle("选择分组")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("完成") {
-                                showingGroupSheet = false
-                            }
-                        }
-                    }
-                }
-                .presentationDetents([.medium])
             }
             .sheet(isPresented: $showingMoreSheet) {
                 NavigationStack {
@@ -93,6 +84,29 @@ struct LibraryView: View {
                     }
                 }
                 .presentationDetents([.medium])
+            }
+            .sheet(isPresented: $showingSearchSheet) {
+                NavigationStack {
+                    List {
+                        ForEach(books.filter { book in
+                            searchText.isEmpty ||
+                            book.title.localizedCaseInsensitiveContains(searchText) ||
+                            book.author.localizedCaseInsensitiveContains(searchText)
+                        }) { book in
+                            BookRowView(book: book)
+                        }
+                    }
+                    .searchable(text: $searchText, prompt: "搜索书名或作者")
+                    .navigationTitle("搜索")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("完成") {
+                                showingSearchSheet = false
+                            }
+                        }
+                    }
+                }
             }
         }
         .enableInjection()
@@ -148,6 +162,25 @@ struct BookRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 8)
+    }
+}
+
+struct GroupButton: View {
+    let title: String
+    let count: Int
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.subheadline)
+            Text("\(count)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color(.systemGray6))
+        .cornerRadius(15)
     }
 }
 

@@ -13,8 +13,12 @@ final class Book {
     var lastReadTime: Date?
     var isLocal: Bool
     var localPath: String?
+    var isFavorite: Bool
+    var isReading: Bool
     
     init(title: String, author: String, sourceUrl: String) {
+        self.isFavorite = false
+        self.isReading = false
         self.title = title
         self.author = author
         self.sourceUrl = sourceUrl
