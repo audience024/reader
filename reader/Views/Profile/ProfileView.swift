@@ -82,8 +82,12 @@ struct ProfileView: View {
                     Text("信息查看")
                 }
             }
-            .navigationTitle("我的")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("我的")
+                        .font(.headline)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         // TODO: 显示帮助信息
