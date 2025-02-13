@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class Chapter {
-    let id: UUID
+    var id: UUID
     var title: String
     var startOffset: Int64
     var endOffset: Int64

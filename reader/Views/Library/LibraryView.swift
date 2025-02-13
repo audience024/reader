@@ -5,13 +5,15 @@ import UniformTypeIdentifiers
 struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var books: [Book]
-    @State private var searchText = "" // 移除搜索栏
+    @State private var searchText = ""
     @State private var showingGroupSheet = false
     @State private var showingMoreSheet = false
     @State private var showingSearchSheet = false
     @State private var showingFilePicker = false
     @State private var importError: Error?
     @State private var showingErrorAlert = false
+    @State private var showingDeleteAlert = false
+    @State private var bookToDelete: Book?
     
     var body: some View {
         NavigationStack {
@@ -29,26 +31,40 @@ struct LibraryView: View {
                         .padding(.horizontal)
                     }
                     .padding(.vertical, 8)
-                    
-                    
                 }
                 .background(Color(.systemBackground))
                 
                 List {
                     ForEach(books) { book in
-                        NavigationLink(destination: ReaderView(book: book)) {
+                        Button {
+                            let readerView = ReaderView(book: book)
+                                .ignoresSafeArea()
+                            let hostingController = ReaderHostingController(rootView: readerView)
+                            hostingController.modalPresentationStyle = .fullScreen
+                            UIApplication.shared.firstKeyWindow?.rootViewController?.present(hostingController, animated: true)
+                        } label: {
                             BookRowView(book: book)
                                 .contextMenu {
-                                    Button(action: {}) {
-                                        Label("查看详情", systemImage: "info.circle")
+                                    Button(action: {
+                                        bookToDelete = book
+                                        showingDeleteAlert = true
+                                    }) {
+                                        Label("删除", systemImage: "trash")
+                                            .foregroundColor(.red)
                                     }
                                     Button(action: {}) {
-                                        Label("下载", systemImage: "arrow.down.circle")
+                                        Label("查看详情", systemImage: "info.circle")
                                     }
                                     Button(action: {}) {
                                         Label("移动到分组", systemImage: "folder")
                                     }
                                 }
+                        }
+                    }
+                    .onDelete { indexSet in
+                        if let index = indexSet.first {
+                            bookToDelete = books[index]
+                            showingDeleteAlert = true
                         }
                     }
                 }
@@ -62,14 +78,7 @@ struct LibraryView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingMoreSheet = true }) {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingMoreSheet) {
-                NavigationStack {
-                    List {
+                    Menu {
                         Button(action: { showingFilePicker = true }) {
                             Label("添加本地书籍", systemImage: "doc.badge.plus")
                         }
@@ -79,18 +88,10 @@ struct LibraryView: View {
                         Button(action: {}) {
                             Label("管理分组", systemImage: "folder.badge.plus")
                         }
-                    }
-                    .navigationTitle("更多操作")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("完成") {
-                                showingMoreSheet = false
-                            }
-                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
                 }
-                .presentationDetents([.medium])
             }
             .sheet(isPresented: $showingSearchSheet) {
                 NavigationStack {
@@ -121,9 +122,16 @@ struct LibraryView: View {
                     case .success(let url):
                         Task {
                             do {
+                                print("选择的文件路径：\(url.path)")
+                                print("文件是否存在：\(FileManager.default.fileExists(atPath: url.path))")
+                                
                                 let fileService = FileService.shared
                                 let bookUrl = try await fileService.importBook(from: url)
+                                print("导入后的文件路径：\(bookUrl.path)")
+                                print("导入后文件是否存在：\(FileManager.default.fileExists(atPath: bookUrl.path))")
+                                
                                 let encoding = try fileService.detectEncoding(of: bookUrl)
+                                print("检测到的文件编码：\(encoding)")
                                 
                                 let book = Book(
                                     title: url.deletingPathExtension().lastPathComponent,
@@ -135,13 +143,16 @@ struct LibraryView: View {
                                 
                                 modelContext.insert(book)
                                 try modelContext.save()
+                                print("书籍保存成功：\(book.title)")
                                 
                             } catch {
+                                print("导入失败：\(error)")
                                 importError = error
                                 showingErrorAlert = true
                             }
                         }
                     case .failure(let error):
+                        print("文件选择失败：\(error)")
                         importError = error
                         showingErrorAlert = true
                     }
@@ -152,8 +163,36 @@ struct LibraryView: View {
             } message: { error in
                 Text(error.localizedDescription)
             }
+            .alert("删除书籍", isPresented: $showingDeleteAlert) {
+                Button("取消", role: .cancel) {}
+                Button("删除", role: .destructive) {
+                    if let book = bookToDelete {
+                        deleteBook(book)
+                    }
+                }
+            } message: {
+                Text("确定要删除《\(bookToDelete?.title ?? "")》吗？此操作不可恢复。")
+            }
         }
         .enableInjection()
+    }
+    
+    private func deleteBook(_ book: Book) {
+        do {
+            // 先删除文件
+            if book.isLocal {
+                try FileService.shared.deleteBook(at: URL(fileURLWithPath: book.filePath))
+            }
+            
+            // 再删除数据库记录
+            modelContext.delete(book)
+            try modelContext.save()
+            print("书籍删除成功：\(book.title)")
+        } catch {
+            print("删除失败：\(error)")
+            importError = error
+            showingErrorAlert = true
+        }
     }
     
     #if DEBUG
@@ -234,3 +273,4 @@ struct GroupButton: View {
     LibraryView()
         .modelContainer(for: Book.self)
 }
+

@@ -26,12 +26,26 @@ class FileService {
         let directory = booksDirectory
         print("书籍目录路径：\(directory.path)")
         
-        if !fileManager.fileExists(atPath: directory.path) {
+        var isDirectory: ObjCBool = false
+        let exists = fileManager.fileExists(atPath: directory.path, isDirectory: &isDirectory)
+        
+        if !exists {
             print("创建书籍目录...")
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+            print("书籍目录创建成功")
+        } else if !isDirectory.boolValue {
+            print("路径存在但不是目录，删除并重新创建...")
+            try fileManager.removeItem(at: directory)
             try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
             print("书籍目录创建成功")
         } else {
             print("书籍目录已存在")
+        }
+        
+        // 验证目录权限
+        if !fileManager.isWritableFile(atPath: directory.path) {
+            print("警告：书籍目录不可写")
+            throw ReaderError.storageError("书籍目录不可写")
         }
     }
     
@@ -46,14 +60,31 @@ class FileService {
         let destinationURL = booksDirectory.appendingPathComponent(fileName)
         print("目标路径：\(destinationURL.path)")
         
+        // 如果目标文件已存在，先删除
         if fileManager.fileExists(atPath: destinationURL.path) {
-            print("文件已存在：\(destinationURL.path)")
-            throw ReaderError.importError("文件已存在：\(fileName)")
+            print("目标文件已存在，删除旧文件")
+            try fileManager.removeItem(at: destinationURL)
+        }
+        
+        // 确保源文件存在且可读
+        guard fileManager.fileExists(atPath: sourceURL.path) else {
+            print("源文件不存在：\(sourceURL.path)")
+            throw ReaderError.importError("源文件不存在")
+        }
+        
+        guard fileManager.isReadableFile(atPath: sourceURL.path) else {
+            print("源文件不可读：\(sourceURL.path)")
+            throw ReaderError.importError("源文件不可读")
         }
         
         do {
-            try fileManager.copyItem(at: sourceURL, to: destinationURL)
-            print("文件复制成功：\(destinationURL.path)")
+            // 读取源文件内容
+            let data = try Data(contentsOf: sourceURL)
+            print("读取源文件成功，大小：\(data.count) 字节")
+            
+            // 写入目标文件
+            try data.write(to: destinationURL)
+            print("写入目标文件成功")
         } catch {
             print("文件复制失败：\(error)")
             throw ReaderError.importError("文件复制失败：\(error.localizedDescription)")
@@ -76,11 +107,24 @@ class FileService {
     
     // 删除书籍文件
     func deleteBook(at url: URL) throws {
-        guard url.path.starts(with: booksDirectory.path) else {
-            throw ReaderError.storageError("无法删除非书籍目录中的文件")
-        }
+        // 获取文件名
+        let fileName = url.lastPathComponent
+        let targetPath = booksDirectory.appendingPathComponent(fileName).path
         
-        try fileManager.removeItem(at: url)
+        // 如果文件存在于当前的书籍目录中，则删除它
+        if FileManager.default.fileExists(atPath: targetPath) {
+            try FileManager.default.removeItem(atPath: targetPath)
+            print("文件删除成功：\(targetPath)")
+        } else {
+            // 如果文件不在当前书籍目录中，尝试删除原始路径
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+                print("文件删除成功：\(url.path)")
+            } else {
+                print("文件不存在：\(url.path)")
+                // 如果文件已经不存在，我们认为删除是成功的
+            }
+        }
     }
     
     // 检测文件编码
@@ -101,6 +145,8 @@ class FileService {
             print("无法读取文件内容：\(url.path)")
             throw ReaderError.readError("无法读取文件")
         }
+        
+        print("成功读取文件，大小：\(data.count) 字节")
         
         // 尝试常见编码
         let encodings: [String.Encoding] = [
