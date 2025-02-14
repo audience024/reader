@@ -23,10 +23,14 @@ struct ReaderView: View {
             ZStack(alignment: .top) {
                 // 背景色
                 viewModel.readingConfig.backgroundColor
-                    .ignoresSafeArea()
+                    .ignoresSafeArea(.container, edges: [.leading, .trailing])
                 
                 // 内容区域
                 VStack(spacing: 0) {
+                    // 顶部安全区域
+                    Color.clear
+                        .frame(height: geometry.safeAreaInsets.top + 40)
+                    
                     // 主要内容
                     if viewModel.isLoading {
                         ProgressView("加载中...")
@@ -76,7 +80,7 @@ struct ReaderView: View {
                                         withAnimation(.easeInOut(duration: 0.25)) {
                                             showingTopBar.toggle()
                                             showingBottomBar.toggle()
-                                            hostingController?.setStatusBarHidden(!showingTopBar)
+                                            // 不再隐藏状态栏，保持其始终可见
                                         }
                                     }
                                 
@@ -115,7 +119,7 @@ struct ReaderView: View {
                 }
                 .safeAreaInset(edge: .top) {
                     if showingTopBar {
-                        Color.clear.frame(height: 44)
+                        Color.clear.frame(height: geometry.safeAreaInsets.top + 44)
                     }
                 }
                 
@@ -132,6 +136,7 @@ struct ReaderView: View {
                             UIApplication.shared.firstKeyWindow?.rootViewController?.dismiss(animated: true)
                         }
                     )
+                    .padding(.top, geometry.safeAreaInsets.top + 44)
                     
                     Spacer()
                     
@@ -145,6 +150,7 @@ struct ReaderView: View {
                         }
                     )
                 }
+                .ignoresSafeArea(.container, edges: [.bottom])
             }
         }
         .preferredColorScheme(viewModel.readingConfig.isNightMode ? .dark : .light)
@@ -369,4 +375,4 @@ struct ErrorView: View {
     let book = Book(title: "测试书籍", filePath: "", fileType: .txt)
     return ReaderView(book: book)
         .modelContainer(for: Book.self)
-} 
+}

@@ -9,24 +9,25 @@ extension UIApplication {
     }
     
     var statusBarStyle: UIStatusBarStyle {
-        get {
-            return firstKeyWindow?.windowScene?.statusBarManager?.statusBarStyle ?? .default
-        }
-        set {
-            firstKeyWindow?.windowScene?.statusBarManager?.statusBarStyle = newValue
+        return self.firstKeyWindow?.windowScene?.statusBarManager?.statusBarStyle ?? .default
+    }
+    
+    func setStatusBarStyle(_ style: UIStatusBarStyle) {
+        if let windowScene = self.firstKeyWindow?.windowScene {
+            let viewController = windowScene.windows.first?.rootViewController
+            viewController?.setNeedsStatusBarAppearanceUpdate()
         }
     }
     
     func setStatusBarHidden(_ hidden: Bool, with animation: UIStatusBarAnimation) {
-        guard let windowScene = firstKeyWindow?.windowScene else { return }
-        let statusBarManager = windowScene.statusBarManager
+        guard let window = self.firstKeyWindow else { return }
         
         if animation == .none {
-            statusBarManager?.isStatusBarHidden = hidden
+            window.windowLevel = hidden ? .statusBar : .normal
         } else {
             UIView.animate(withDuration: 0.3) {
-                statusBarManager?.isStatusBarHidden = hidden
+                window.windowLevel = hidden ? .statusBar : .normal
             }
         }
     }
-} 
+}
