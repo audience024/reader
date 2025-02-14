@@ -147,7 +147,8 @@ struct ReaderView: View {
                         isVisible: showingBottomBar,
                         onPageChanged: { page in
                             viewModel.currentPage = page
-                        }
+                        },
+                        viewModel: viewModel
                     )
                 }
                 .ignoresSafeArea(.container, edges: [.bottom])
@@ -257,6 +258,7 @@ struct BottomBar: View {
     let totalPages: Int
     let isVisible: Bool
     let onPageChanged: (Int) -> Void
+    let viewModel: ReaderViewModel
     
     var body: some View {
         Group {
@@ -265,7 +267,11 @@ struct BottomBar: View {
                     // 进度条
                     if totalPages > 0 {
                         HStack {
-                            Button(action: {}) {
+                            Button(action: {
+                                Task {
+                                    try? await viewModel.previousChapter()
+                                }
+                            }) {
                                 Text("上一章")
                                     .font(.caption)
                             }
@@ -279,7 +285,11 @@ struct BottomBar: View {
                                 step: 1
                             )
                             
-                            Button(action: {}) {
+                            Button(action: {
+                                Task {
+                                    try? await viewModel.nextChapter()
+                                }
+                            }) {
                                 Text("下一章")
                                     .font(.caption)
                             }
