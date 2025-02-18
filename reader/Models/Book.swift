@@ -31,40 +31,19 @@ final class Book {
         set { encodingRawValue = newValue.rawValue }
     }
     
-    init(
-        title: String,
-        author: String? = nil,
-        filePath: String,
-        fileType: BookType,
-        encoding: String.Encoding = .utf8,
-        lastReadChapter: Int = 0,
-        lastReadPosition: Double = 0,
-        sourceUrl: String? = nil,
-        groupName: String? = nil,
-        lastReadTime: Date? = nil,
-        isLocal: Bool = false,
-        localPath: String? = nil,
-        isFavorite: Bool = false,
-        isReading: Bool = false,
-        coverUrl: String? = nil
-    ) {
+    init(title: String, filePath: String, fileType: BookType) {
         self.title = title
-        self.author = author
+        self.author = nil
         self.filePath = filePath
         self.fileType = fileType
-        self.encodingRawValue = encoding.rawValue
-        self.lastReadChapter = lastReadChapter
-        self.lastReadPosition = lastReadPosition
+        self.encodingRawValue = String.Encoding.utf8.rawValue
+        self.lastReadChapter = 0
+        self.lastReadPosition = 0
         self.createTime = Date()
         self.updateTime = Date()
-        self.sourceUrl = sourceUrl
-        self.groupName = groupName
-        self.lastReadTime = lastReadTime
-        self.isLocal = isLocal
-        self.localPath = localPath
-        self.isFavorite = isFavorite
-        self.isReading = isReading
-        self.coverUrl = coverUrl
+        self.isLocal = true
+        self.isFavorite = false
+        self.isReading = false
     }
 }
 

@@ -8,6 +8,7 @@ struct ReaderView: View {
     @State private var showingBottomBar = true
     @State private var showingMenu = false
     @State private var showingError = false
+    @State private var showingChapterList = false
     @State private var hostingController: ReaderHostingController<AnyView>?
     
     // 手势状态
@@ -134,7 +135,8 @@ struct ReaderView: View {
                             viewModel.updateReadingProgress()
                             dismiss()
                             UIApplication.shared.firstKeyWindow?.rootViewController?.dismiss(animated: true)
-                        }
+                        },
+                        showingChapterList: $showingChapterList
                     )
                     .padding(.top, geometry.safeAreaInsets.top + 44)
                     
@@ -148,7 +150,8 @@ struct ReaderView: View {
                         onPageChanged: { page in
                             viewModel.currentPage = page
                         },
-                        viewModel: viewModel
+                        viewModel: viewModel,
+                        showingChapterList: $showingChapterList
                     )
                 }
                 .ignoresSafeArea(.container, edges: [.bottom])
@@ -178,6 +181,17 @@ struct ReaderView: View {
         .onDisappear {
             viewModel.updateReadingProgress()
         }
+        .sheet(isPresented: $showingChapterList) {
+            ChapterListView(
+                chapters: viewModel.chapters,
+                currentChapterIndex: viewModel.currentChapterIndex,
+                onChapterSelected: { index in
+                    Task {
+                        try? await viewModel.jumpToChapter(at: index)
+                    }
+                }
+            )
+        }
         .background {
             Color.clear.onAppear {
                 let hostingController = ReaderHostingController(rootView: AnyView(EmptyView()))
@@ -193,6 +207,7 @@ struct TopBar: View {
     let chapterTitle: String?
     let isVisible: Bool
     let onBack: () -> Void
+    @Binding var showingChapterList: Bool
     
     var body: some View {
         Group {
@@ -259,6 +274,7 @@ struct BottomBar: View {
     let isVisible: Bool
     let onPageChanged: (Int) -> Void
     let viewModel: ReaderViewModel
+    @Binding var showingChapterList: Bool
     
     var body: some View {
         Group {
@@ -301,19 +317,11 @@ struct BottomBar: View {
                     HStack {
                         // 左侧按钮组
                         HStack(spacing: 24) {
-                            Button(action: {}) {
-                                Image(systemName: "magnifyingglass")
-                                    .help("全文搜索")
-                            }
-                            
-                            Button(action: {}) {
-                                Image(systemName: "speaker.wave.2")
-                                    .help("朗读")
-                            }
-                            
-                            Button(action: {}) {
-                                Image(systemName: "play")
-                                    .help("自动翻页")
+                            Button(action: {
+                                showingChapterList = true
+                            }) {
+                                Image(systemName: "list.bullet")
+                                    .help("目录")
                             }
                         }
                         
@@ -329,11 +337,6 @@ struct BottomBar: View {
                             Button(action: {}) {
                                 Image(systemName: "moon")
                                     .help("深色模式")
-                            }
-                            
-                            Button(action: {}) {
-                                Image(systemName: "list.bullet")
-                                    .help("目录")
                             }
                             
                             Button(action: {}) {

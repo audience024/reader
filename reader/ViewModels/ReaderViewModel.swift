@@ -28,6 +28,11 @@ class ReaderViewModel: ObservableObject {
     
     var readingConfig: ReadingConfig
     
+    var currentChapterIndex: Int {
+        guard let currentChapter = currentChapter else { return 0 }
+        return book.chapters.firstIndex(of: currentChapter) ?? 0
+    }
+    
     init(book: Book, parser: any BookParserProtocol = TxtParser()) {
         self.book = book
         self.parser = parser
@@ -181,5 +186,13 @@ class ReaderViewModel: ObservableObject {
         book.lastReadChapter = chapterIndex
         book.isReading = true
         book.lastReadTime = Date()
+    }
+    
+    func jumpToChapter(at index: Int) async throws {
+        guard index >= 0 && index < book.chapters.count else { return }
+        let targetChapter = book.chapters[index]
+        currentChapter = targetChapter
+        try await loadChapter(targetChapter)
+        currentPage = 0
     }
 } 

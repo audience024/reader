@@ -136,10 +136,11 @@ struct LibraryView: View {
                                 let book = Book(
                                     title: url.deletingPathExtension().lastPathComponent,
                                     filePath: bookUrl.path,
-                                    fileType: .txt,
-                                    encoding: encoding,
-                                    isLocal: true
+                                    fileType: .txt
                                 )
+                                
+                                // 设置检测到的编码
+                                book.encoding = encoding
                                 
                                 modelContext.insert(book)
                                 try modelContext.save()
