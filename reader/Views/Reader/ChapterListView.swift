@@ -8,6 +8,23 @@ struct ChapterListView: View {
     @State private var selectedTab = 0
     @State private var showingSearch = false
     
+    // 格式化章节标题
+    private func formatChapterTitle(index: Int, title: String) -> String {
+        // 如果标题已经包含"第x章"或"序章"等格式，直接返回原标题
+        if title.contains("第") && (title.contains("章") || title.contains("节") || title.contains("卷")) ||
+           title.contains("序章") || title.contains("楔子") || title.contains("前言") || title.contains("后记") {
+            return title
+        }
+        
+        // 如果是第一章且标题不包含特定格式，显示为序章
+        if index == 0 {
+            return "序章 \(title)"
+        }
+        
+        // 其他章节添加章节序号
+        return "第\(index + 1)章 \(title)"
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -45,7 +62,7 @@ struct ChapterListView: View {
                                 }) {
                                     HStack(spacing: 12) {
                                         // 章节标题
-                                        Text("第\(index + 1)章 \(chapter.title)")
+                                        Text(formatChapterTitle(index: index, title: chapter.title))
                                             .foregroundColor(index == currentChapterIndex ? .blue : .primary)
                                             .font(.system(size: 16))
                                             .lineLimit(1)
@@ -79,7 +96,7 @@ struct ChapterListView: View {
                     if currentChapterIndex < chapters.count {
                         Divider()
                         HStack {
-                            Text("第\(currentChapterIndex + 1)章 \(chapters[currentChapterIndex].title)")
+                            Text(chapters[currentChapterIndex].title)
                                 .lineLimit(1)
                             Spacer()
                             Text("(\(currentChapterIndex + 1)/\(chapters.count))")

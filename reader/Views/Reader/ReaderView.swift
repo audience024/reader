@@ -186,8 +186,13 @@ struct ReaderView: View {
                 chapters: viewModel.chapters,
                 currentChapterIndex: viewModel.currentChapterIndex,
                 onChapterSelected: { index in
+                    showingChapterList = false  // 先关闭目录
                     Task {
-                        try? await viewModel.jumpToChapter(at: index)
+                        do {
+                            try await viewModel.jumpToChapter(at: index)
+                        } catch {
+                            showingError = true
+                        }
                     }
                 }
             )

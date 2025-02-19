@@ -30,7 +30,7 @@ class ReaderViewModel: ObservableObject {
     
     var currentChapterIndex: Int {
         guard let currentChapter = currentChapter else { return 0 }
-        return book.chapters.firstIndex(of: currentChapter) ?? 0
+        return chapters.firstIndex(of: currentChapter) ?? 0
     }
     
     init(book: Book, parser: any BookParserProtocol = TxtParser()) {
@@ -94,6 +94,9 @@ class ReaderViewModel: ObservableObject {
         currentPage = 0
         totalPages = pages.count
         print("分页完成，共 \(pages.count) 页")
+        
+        // 更新阅读进度
+        updateReadingProgress()
     }
     
     func nextPage() -> Bool {
@@ -189,10 +192,25 @@ class ReaderViewModel: ObservableObject {
     }
     
     func jumpToChapter(at index: Int) async throws {
-        guard index >= 0 && index < book.chapters.count else { return }
-        let targetChapter = book.chapters[index]
-        currentChapter = targetChapter
+        guard index >= 0 && index < chapters.count else {
+            print("章节索引无效：\(index)")
+            return
+        }
+        
+        let targetChapter = chapters[index]
+        print("跳转到章节：\(targetChapter.title)")
+        
+        // 加载章节内容
         try await loadChapter(targetChapter)
+        
+        // 重置页面位置
         currentPage = 0
+        
+        // 更新阅读进度
+        book.lastReadChapter = index
+        book.isReading = true
+        book.lastReadTime = Date()
+        
+        print("章节跳转完成：\(targetChapter.title)")
     }
 } 
